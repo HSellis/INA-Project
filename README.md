@@ -124,5 +124,3 @@ This project applies network analysis methods to the financial market by modelin
 
 ---
 
-Let me know if you'd like a **starter notebook or script template** with placeholders for each of these steps.
-
