@@ -124,3 +124,7 @@ This project applies network analysis methods to the financial market by modelin
 
 ---
 
+##  Project Work
+* Henri: Community detection
+* Riccardo: Centrality measure + (Time Windows analysis)
+* Ondra: Graphlets + visualization
