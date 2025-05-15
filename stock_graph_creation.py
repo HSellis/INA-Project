@@ -24,6 +24,7 @@ def correlation_to_graph(corr_matrix: pd.DataFrame, threshold: float = 0.7) -> n
     - G: A networkx.Graph object with nodes and weighted edges.
     """
     G = nx.Graph()
+    G.name = "correlations"
     
     # Add nodes (stock tickers)
     for stock in corr_matrix.columns:
@@ -39,3 +40,28 @@ def correlation_to_graph(corr_matrix: pd.DataFrame, threshold: float = 0.7) -> n
                 G.add_edge(stock1, stock2, weight=corr_value)
 
     return G
+
+def correlation_to_pos_neg_graphs(corr_matrix: pd.DataFrame, threshold: float = 0.7):
+    """
+    one graph with strong positive correlation edges and another with strong negative correlation edges
+    """
+    G_pos = nx.Graph()
+    G_pos.name = "pos_correlations"
+    G_neg = nx.Graph()
+    G_neg.name = "neg_correlations"
+
+    for stock in corr_matrix.columns:
+        G_pos.add_node(stock)
+        G_neg.add_node(stock)
+
+    for i, stock1 in enumerate(corr_matrix.columns):
+        for j in range(i + 1, len(corr_matrix.columns)):
+            stock2 = corr_matrix.columns[j]
+            corr_value = corr_matrix.iloc[i, j]
+
+            if corr_value >= threshold:
+                G_pos.add_edge(stock1, stock2, weight=corr_value)
+            elif corr_value <= -threshold:
+                G_neg.add_edge(stock1, stock2, weight=abs(corr_value))  # keep weight positive for easier handling
+
+    return G_pos, G_neg
