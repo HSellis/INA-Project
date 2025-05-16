@@ -9,7 +9,7 @@ def get_sp500_stocks(start_date, end_date):
     table = tables[0]
     stocks = list(table["Symbol"])
     dataset = yfinance.download(stocks, start=start_date, end=end_date)
-    df_filtered = dataset["Close"]
+    df_filtered = dataset["Close"] / dataset["Open"]
     return df_filtered
 
 def correlation_to_graph(corr_matrix: pd.DataFrame, threshold: float = 0.7) -> nx.Graph:
