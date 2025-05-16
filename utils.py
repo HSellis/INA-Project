@@ -7,40 +7,37 @@ import seaborn as sns
 from cdlib import viz, algorithms
 from cdlib.classes import NodeClustering
 from stock_graph_creation import correlation_to_graph
+import numpy as np
 
 
 def compute_centralities_over_time(df, windows, threshold=0.7):
-    """
-    Computes centralities for each time window using correlation graphs.
-    """
-    results = []
+    metrics = []
 
     for start, end in windows:
         df_window = df.loc[start:end]
         if df_window.isnull().all().all():
-            continue  # skip empty windows
+            continue
 
         corr_matrix = df_window.corr()
         G = correlation_to_graph(corr_matrix, threshold=threshold)
 
-        # Skip graphs with no edges (empty graphs)
         if G.number_of_edges() == 0:
             continue
 
-        degree_centrality = nx.degree_centrality(G)
-        betweenness_centrality = nx.betweenness_centrality(G, weight='weight')
-        closeness_centrality = nx.closeness_centrality(G)
+        n = G.number_of_nodes()
+        m = G.number_of_edges()
 
-        for stock in G.nodes:
-            results.append({
-                "Date": end, 
-                "Stock": stock,
-                "Degree": degree_centrality.get(stock, 0),
-                "Betweenness": betweenness_centrality.get(stock, 0),
-                "Closeness": closeness_centrality.get(stock, 0)
-            })
+        metrics.append({
+            "Date": end,
+            "Density": nx.density(G),
+            "Avg_Degree": 2 * m / n,
+            "Clustering": nx.average_clustering(G),
+            "Num_Components": nx.number_connected_components(G),
+            "Largest_Component_Size": max(len(c) for c in nx.connected_components(G))
+        })
 
-    return pd.DataFrame(results)
+    return pd.DataFrame(metrics)
+
 
 
 def info(G):
