@@ -30,9 +30,11 @@ def correlation_to_graph(corr_matrix: pd.DataFrame, stocks_info: dict, threshold
     
     # Add nodes (stock tickers)
     for i, stock in enumerate(corr_matrix.columns):
-        stock_info = stocks_info[stock]
-        print(stock)
-        G.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
+        if stocks_info is not None:
+            stock_info = stocks_info[stock]
+            G.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
+        else:
+            G.add_node(i, label=stock)
 
     # Add edges for correlations above threshold
     for i in range(len(corr_matrix.columns)):
@@ -54,9 +56,13 @@ def correlation_to_pos_neg_graphs(corr_matrix: pd.DataFrame, stocks_info: dict, 
     G_neg.name = "neg_correlations"
 
     for i, stock in enumerate(corr_matrix.columns):
-        stock_info = stocks_info[stock]
-        G_pos.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
-        G_neg.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
+        if stocks_info is not None:
+            stock_info = stocks_info[stock]
+            G_pos.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
+            G_neg.add_node(i, label=stock, sector=stock_info["sector"], industry=stock_info["sub-industry"])
+        else:
+            G_pos.add_node(i, label=stock)
+            G_neg.add_node(i, label=stock)
 
     for i in range(len(corr_matrix.columns)):
         for j in range(i + 1, len(corr_matrix.columns)):

@@ -19,7 +19,7 @@ def compute_centralities_over_time(df, windows, threshold=0.7):
             continue
 
         corr_matrix = df_window.corr()
-        G = correlation_to_graph(corr_matrix, threshold=threshold)
+        G = correlation_to_graph(corr_matrix, None, threshold=threshold)
 
         if G.number_of_edges() == 0:
             continue
