@@ -1,5 +1,6 @@
 import pandas as pd
 import networkx as nx
+import yfinance
 
 
 def get_sp500_stocks_info():
@@ -15,6 +16,13 @@ def get_sp500_stocks_info():
     # COIN was changed to DFS, so downloading this puts non-matching name in the dataframe, which creates errors...
     del stocks_info["COIN"]
     return stocks_info
+
+def get_sp500_stocks(start_date, end_date):
+    stocks_info = get_sp500_stocks_info()
+    stocks = list(stocks_info.keys())
+    dataset = yfinance.download(stocks, start=start_date, end=end_date)
+    df_filtered = dataset["Close"] / dataset["Open"]
+    return df_filtered
 
 def correlation_to_graph(corr_matrix: pd.DataFrame, stocks_info: dict, threshold: float = 0.7) -> nx.Graph:
     G = nx.Graph()
