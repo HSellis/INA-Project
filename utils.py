@@ -60,6 +60,7 @@ def compute_centralities_over_time(df, windows, threshold=0.7):
 
     return pd.DataFrame(metrics)
 
+# over the whole graph
 def compute_degree_centrality(df_prices, weekly_dates, threshold=0.5):
     degree_centralities = []
 
@@ -94,6 +95,37 @@ def compute_degree_centrality(df_prices, weekly_dates, threshold=0.5):
             degree_centralities.append(avg_centrality)
 
     return degree_centralities
+
+
+# over some specific stock tickers
+def compute_node_degree_centrality(df_prices, weekly_dates, threshold=0.5):
+    node_centralities = {ticker: [] for ticker in df_prices.columns}
+
+    for date in weekly_dates:
+        end_date = pd.to_datetime(date)
+        start_date = end_date - pd.Timedelta(days=6)
+
+        week_data = df_prices.loc[start_date:end_date].dropna(axis=1, how='any')
+
+        if week_data.shape[0] < 2:
+            for ticker in node_centralities:
+                node_centralities[ticker].append(np.nan)
+            continue
+
+        corr_matrix = week_data.corr()
+        G = nx.Graph()
+        for i in corr_matrix.columns:
+            for j in corr_matrix.columns:
+                if i != j and corr_matrix.loc[i, j] > threshold:
+                    G.add_edge(i, j, weight=corr_matrix.loc[i, j])
+
+        centrality_dict = nx.degree_centrality(G)
+
+        for ticker in node_centralities:
+            node_centralities[ticker].append(centrality_dict.get(ticker, 0))  # 0 if not in graph
+
+    return node_centralities
+
 
 def rolling_time_windows(start_date, end_date, window_size_days=15, step_days=7):
     """
