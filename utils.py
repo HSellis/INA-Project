@@ -10,6 +10,28 @@ from stock_graph_creation import correlation_to_graph
 import numpy as np
 
 
+def info(G, fast=False):
+    print("{:>12s} | '{:s}'".format('Graph', G.name))
+
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    
+    print("{:>12s} | {:,d} ({:,d})".format('Nodes', n, nx.number_of_isolates(G)))
+    print("{:>12s} | {:,d} ({:,d})".format('Edges', m, nx.number_of_selfloops(G)))
+    print("{:>12s} | {:.2f} ({:,d})".format('Degree', 2 * m / n, max(k for _, k in G.degree())))
+
+    if isinstance(G, nx.MultiGraph):
+        G = nx.Graph(G)
+
+    if not fast:
+        C = sorted(nx.connected_components(nx.MultiGraph(G)), key = len, reverse = True)
+        print("{:>12s} | {:.1f}% ({:,d})".format('LCC', 100 * len(C[0]) / n, len(C)))
+
+        print("{:>12s} | {:.4f}".format('Clustering', nx.average_clustering(G if type(G) == nx.Graph else nx.Graph(G))))
+        
+    print()
+    return G
+
 def compute_centralities_over_time(df, windows, threshold=0.7):
     metrics = []
 
@@ -73,29 +95,6 @@ def compute_degree_centrality(df_prices, weekly_dates, threshold=0.5):
 
     return degree_centralities
 
-
-def info(G):
-  print("{:>12s} | '{:s}'".format('Graph', G.name))
-
-  n = G.number_of_nodes()
-  m = G.number_of_edges()
-  
-  print("{:>12s} | {:,d} ({:,d})".format('Nodes', n, nx.number_of_isolates(G)))
-  print("{:>12s} | {:,d} ({:,d})".format('Edges', m, nx.number_of_selfloops(G)))
-  print("{:>12s} | {:.2f} ({:,d})".format('Degree', 2 * m / n, max(k for _, k in G.degree())))
-  
-  C = sorted(nx.connected_components(G), key = len, reverse = True)
-
-  print("{:>12s} | {:.1f}% ({:,d})".format('LCC', 100 * len(C[0]) / n, len(C)))
-
-  if isinstance(G, nx.MultiGraph):
-    G = nx.Graph(G)
-
-  print("{:>12s} | {:.4f}".format('Clustering', nx.average_clustering(G)))
-  print()
-  
-  return G
-
 def rolling_time_windows(start_date, end_date, window_size_days=15, step_days=7):
     """
     Generate rolling date windows.
@@ -132,3 +131,60 @@ def plot_centrality(df, centrality_type='Betweenness', top_k=5):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+
+def plot_wiring_diagram(G, layout = None, C = None, S = None, label = "wiring", save_file = True):
+    if layout is None:
+        layout = nx.spring_layout(G)
+    
+    colors = None
+    if C is not None:
+        node_to_comm = {}
+        for c, comm in enumerate(C.communities):
+            for node in comm:
+                node_to_comm[node] = c
+        colors = [node_to_comm.get(node, 0) for node in G.nodes]
+    
+    sizes = None
+    if S is not None:
+        sizes = [100 * len(G)] * len(G)
+        for i in G.nodes():
+            sizes[i] *= S[i]
+  
+    labels = {i: "" if G.nodes[i]['label'].isdigit() else G.nodes[i]['label'] for i in G.nodes()}
+  
+    plt.figure()
+
+    nx.draw(G, pos = layout, node_color = colors, node_size = sizes, labels = labels, font_size = 5, edge_color = 'gray')
+  
+    if save_file:
+        plt.savefig(G.name + "." + label + ".pdf", bbox_inches = 'tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_block_model(G, C, save_file=False):
+    plt.figure(figsize=(10, 10))
+  
+    C = sorted(C.communities, key = len)
+    nodes = [i for c in C for i in c]
+    A = nx.adjacency_matrix(G, nodelist = nodes).todense()
+  
+    plt.imshow(A, cmap = 'binary', interpolation = 'nearest')
+  
+    xy = 0
+    for c in C[:-1]:
+        xy += len(c)
+    
+        plt.plot([xy - 0.5, xy - 0.5], [-0.5, len(G) - 0.5], '-g')
+        plt.plot([-0.5, len(G) - 0.5], [xy - 0.5, xy - 0.5], '-g')
+
+    plt.yticks(range(len(G)), labels = [G.nodes[i]['label'] for i in nodes], size = 2)
+    plt.xticks([])
+  
+    if save_file:
+        plt.savefig(G.name + ".blocks.pdf", bbox_inches = 'tight')
+    else:
+        plt.show()
+    plt.close()
