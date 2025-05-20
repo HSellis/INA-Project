@@ -38,6 +38,40 @@ def compute_centralities_over_time(df, windows, threshold=0.7):
 
     return pd.DataFrame(metrics)
 
+def compute_degree_centrality(df_prices, weekly_dates, threshold=0.5):
+    degree_centralities = []
+
+    for date in weekly_dates:
+        # Intervallo settimanale
+        end_date = pd.to_datetime(date)
+        start_date = end_date - pd.Timedelta(days=6)
+        
+        # Slice dei prezzi settimanali
+        week_data = df_prices.loc[start_date:end_date].dropna(axis=1, how='any')
+        
+        if week_data.shape[0] < 2:
+            degree_centralities.append(np.nan)
+            continue
+        
+        # Matrice di correlazione
+        corr_matrix = week_data.corr()
+
+        # Costruzione grafo
+        G = nx.Graph()
+        for i in corr_matrix.columns:
+            for j in corr_matrix.columns:
+                if i != j and corr_matrix.loc[i, j] > threshold:
+                    G.add_edge(i, j, weight=corr_matrix.loc[i, j])
+        
+        # Calcolo degree centrality
+        if len(G.nodes) == 0:
+            degree_centralities.append(0)
+        else:
+            centrality_dict = nx.degree_centrality(G)
+            avg_centrality = np.mean(list(centrality_dict.values()))
+            degree_centralities.append(avg_centrality)
+
+    return degree_centralities
 
 
 def info(G):
