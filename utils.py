@@ -3,11 +3,12 @@ import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from cdlib import viz, algorithms
 from cdlib.classes import NodeClustering
 from stock_graph_creation import correlation_to_graph
-import numpy as np
+from collections import defaultdict
 
 
 def info(G, fast=False):
@@ -220,3 +221,42 @@ def plot_block_model(G, C, save_file=False):
     else:
         plt.show()
     plt.close()
+
+def investigate_communities(G, communities, printout=True, plot=True):
+    num_nodes = []
+    most_common_sector_names = []
+    most_common_sector_percentages = []
+    for i, community in enumerate(communities):
+        subgraph = nx.induced_subgraph(G, community)
+        subgraph.name = f"community {i+1}"
+
+        sectors_counts = defaultdict(int)
+        for _, data in subgraph.nodes(data=True):
+            sectors_counts[data["sector"]] += 1
+        sectors_counts_sorted = sorted(sectors_counts.items(), key=lambda item: item[1], reverse=True)
+
+        num_nodes.append(len(community))
+        most_common_sector_names.append(sectors_counts_sorted[0][0])
+        ratio = sectors_counts_sorted[0][1] / len(community)
+        most_common_sector_percentages.append(round(ratio * 100, 1))
+
+        if printout:
+            info(subgraph)
+
+            subgraph_labels = [data["label"] for _, data in subgraph.nodes(data=True)]
+            print("Stocks:", ", ".join(subgraph_labels))
+            print()
+            for sector, count in sectors_counts_sorted:
+                print(f"{sector}: {count}")
+            print()
+
+        if plot:
+            plot_wiring_diagram(subgraph, nx.forceatlas2_layout(subgraph), save_file=False)
+
+    results = pd.DataFrame({
+        "Number of stocks in community": num_nodes,
+        "Most common sector": most_common_sector_names,
+        "% of stocks in that sector": most_common_sector_percentages
+    })
+    results.index = [f"Community {i+1}" for i in range(len(communities))]
+    return results
