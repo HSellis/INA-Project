@@ -197,7 +197,7 @@ def plot_wiring_diagram(G, layout = None, C = None, S = None, label = "wiring", 
     plt.close()
 
 
-def plot_block_model(G, C, save_file=False):
+def plot_block_model(G, C, title=None, title_fontsize=20, save_file=False):
     plt.figure(figsize=(10, 10))
   
     C = sorted(C.communities, key = len)
@@ -215,6 +215,8 @@ def plot_block_model(G, C, save_file=False):
 
     plt.yticks(range(len(G)), labels = [G.nodes[i]['label'] for i in nodes], size = 2)
     plt.xticks([])
+    if title is not None:
+        plt.title(title, fontsize=title_fontsize)
   
     if save_file:
         plt.savefig(G.name + ".blocks.pdf", bbox_inches = 'tight')
